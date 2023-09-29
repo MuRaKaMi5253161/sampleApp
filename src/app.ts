@@ -1,5 +1,5 @@
 // autobind decorator
-// typeScript 
+// 引数に_を指定すると必ず関数内で使用しないことを宣言する。
 function autobind(_: any,_2: string, descriptor: PropertyDescriptor,) {
     const originalMethod = descriptor.value;
     const adjDescriptor: PropertyDescriptor = {
@@ -40,10 +40,40 @@ class ProjectInput {
         this.attach();
     }
 
+    // void 返却値の型が守れない場合もあるよという意味 return;の部分
+    private getherUserInput(): [string, string, number] | void {
+        const enterdTitle = this.titleInputElement.value;
+        const enterdDescription = this.descriptionInputElement.value;
+        const enterdManday = this.mandayInputElement.value;
+
+        if(
+            enterdTitle.trim().length === 0 ||
+            enterdDescription.trim().length === 0 ||
+            enterdManday.trim().length === 0
+        ) {
+            alert("未入力の項目があります");
+            return;
+        } else {
+            return [enterdTitle, enterdDescription, +enterdManday];
+        }
+    }
+
+    private clearInputs() {
+        this.titleInputElement.value = "";
+        this.descriptionInputElement.value = "";
+        this.mandayInputElement.value = "";
+    }
+
     @autobind
     private submitHandler(event: Event) {
         event.preventDefault();
         console.log(this.titleInputElement.value);
+        const userInput = this.getherUserInput();
+        if(Array.isArray(userInput)) {
+            const[title, desc, manday] = userInput;
+            console.log(title,desc,manday);
+            this.clearInputs();
+        }
     }
 
     private configure() {
