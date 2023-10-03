@@ -1,3 +1,35 @@
+// validate
+interface Validatable {
+    value: string | number;
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    min?: number;
+    max?: number;
+}
+
+function validate(validatableInput: Validatable) {
+    let isValid = true;
+    // 必須チェック
+    if(validatableInput.required) {
+        isValid = isValid && validatableInput.value.toString().trim().length !== 0;
+    }
+    // 文字数チェック
+    if(validatableInput.minLength !== undefined && typeof validatableInput.value === "string") {
+        isValid = isValid && validatableInput.value.length >= validatableInput.minLength;
+    }
+    if(validatableInput.maxLength !== undefined && typeof validatableInput.value === "string") {
+        isValid = isValid && validatableInput.value.length <= validatableInput.maxLength;
+    }
+    if(validatableInput.min !== undefined && typeof validatableInput.value === "number") {
+        isValid = isValid && validatableInput.value >= validatableInput.min;
+    }
+    if(validatableInput.max !== undefined && typeof validatableInput.value === "number") {
+        isValid = isValid && validatableInput.value <= validatableInput.max;
+    }
+    return isValid;
+}
+
 // autobind decorator
 // 引数に_を指定すると必ず関数内で使用しないことを宣言する。
 function autobind(_: any,_2: string, descriptor: PropertyDescriptor,) {
@@ -10,6 +42,37 @@ function autobind(_: any,_2: string, descriptor: PropertyDescriptor,) {
         }
     }
     return adjDescriptor;
+}
+
+class ProjectList {
+    templateElement: HTMLTemplateElement;
+    hostElement: HTMLDivElement;
+    element: HTMLElement;
+
+    constructor(private type: "active" | "finished") {
+        // asはnullではないことを保証
+        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
+        this.hostElement = document.getElementById('app')! as HTMLDivElement;
+
+        // importNode(templateタグの内側を指定, ディープクローンするかどうか true:する, false:しない)
+        const importedNode = document.importNode(this.templateElement.content,true);
+        // formの値を取得する
+        this.element = importedNode.firstElementChild as HTMLElement;
+        this.element.id = `${this.type}-projects`;
+        this.attach();
+        this.renderContent();
+    }
+
+    private renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector('ul')!.id = listId;
+        this.element.querySelector('h2')!.textContent = 
+            this.type === 'active' ? '実行プロジェクト' : '完了プロジェクト';
+    }
+
+    private attach() {
+        this.hostElement.insertAdjacentElement('beforeend', this.element);
+    }
 }
 
 class ProjectInput {
@@ -46,12 +109,27 @@ class ProjectInput {
         const enterdDescription = this.descriptionInputElement.value;
         const enterdManday = this.mandayInputElement.value;
 
+        const titleValidatable: Validatable = {
+            value: enterdTitle,
+            required: true,
+        }
+        const descriptionValidatable: Validatable = {
+            value: enterdDescription,
+            required: true,
+            minLength: 5
+        }
+        const mandayValidatable: Validatable = {
+            value: enterdManday,
+            required: true,
+            min: 1,
+            max: 1000
+        }
         if(
-            enterdTitle.trim().length === 0 ||
-            enterdDescription.trim().length === 0 ||
-            enterdManday.trim().length === 0
+            !validate(titleValidatable) ||
+            !validate(descriptionValidatable) ||
+            !validate(mandayValidatable)
         ) {
-            alert("未入力の項目があります");
+            alert("入力値が正しくありません。再度お試しください。");
             return;
         } else {
             return [enterdTitle, enterdDescription, +enterdManday];
@@ -87,3 +165,5 @@ class ProjectInput {
 }
 
 const prjInput = new ProjectInput();
+const activePrjList = new ProjectList('active');
+const finishedPrjList = new ProjectList('finished');
